@@ -1,9 +1,5 @@
-
-
-
 generator client {
   provider = "prisma-client-js"
-
 }
 
 datasource db {
@@ -12,44 +8,136 @@ datasource db {
 }
 
 model User {
-  id            String         @id @default(cuid())
+  id            String     @id @default(cuid())
   name          String
-  email         String         @unique
-  password      String
-  profilePhoto  String?
-  role          UserRole       @default(CUSTOMER)
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @default(now())
-  refreshTokens RefreshToken[]
-  orders        Order[]
-  reviews       Review[]
+  email         String     @unique
+  emailVerified Boolean
+  image         String?
+  role          UserRole   @default(CUSTOMER)
+  status        UserStatus @default(ACTIVE)
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  orders   Order[]
+  reviews  Review[]
+  accounts Account[]
+  sessions Session[]
+  cart     Cart?
+
+  @@map("user")
 }
 
-model RefreshToken {
+// model session 
+
+model Session {
   id        String   @id @default(cuid())
-  token     String   @unique
-  userId    String
-  user      User     @relation(fields: [userId], references: [id])
-  revoked   Boolean  @default(false)
-  createdAt DateTime @default(now())
   expiresAt DateTime
+  token     String
+  createdAt DateTime
+  updatedAt DateTime
+  ipAddress String?
+  userAgent String?
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([token])
+  @@map("session")
 }
 
+// model account 
+
+model Account {
+  id                    String    @id @default(cuid())
+  accountId             String
+  providerId            String
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime
+  updatedAt             DateTime
+
+  @@map("account")
+}
+
+// model verificationToken
+
+model Verification {
+  id         String    @id @default(cuid())
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime?
+  updatedAt  DateTime?
+
+  @@map("verification")
+}
 
 model Product {
-  id            String         @id @default(cuid())
-  name          String
-  slug          String        @unique
-  description   String?
-  price         Float
-  stock         Int
+  id               String  @id @default(cuid())
+  productId        String  @unique
+  name             String
+  slug             String  @unique
+  description      String?
+  shortDescription String?
+  price            Float
+  stock            Int
+
+  // reviews
   reviews       Review[]
+  averageRating Float       @default(0)
+  totalReviews  Int         @default(0)
   OrderItem     OrderItem[]
-  productImages ProductImage[]
-  category      Category?      @relation(fields: [categoryId], references: [id])
-  categoryId    String?
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
+
+  //  SEO
+
+  metaTitle       String?
+  metaDescription String?
+
+  // Dimensions
+  weight Float? // grams or kg
+  width  Float? // cm
+  height Float?
+  length Float?
+
+  productImages   ProductImage[]
+  category        Category?        @relation(fields: [categoryId], references: [id])
+  categoryId      String?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  productVarients ProductVarient[]
+  cartItems       CartItem[]
+}
+
+// Add these new models
+
+model Cart {
+  id        String     @id @default(cuid())
+  userId    String     @unique
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items     CartItem[]
+  updatedAt DateTime   @updatedAt
+  createdAt DateTime   @default(now())
+
+  @@map("cart")
+}
+
+model CartItem {
+  id        String   @id @default(cuid())
+  cartId    String
+  cart      Cart     @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  productId String
+  product   Product  @relation(fields: [productId], references: [id])
+  quantity  Int      @default(1)
+  addedAt   DateTime @default(now())
+
+  @@unique([cartId, productId])
+  @@map("cart_item")
 }
 
 model Category {
@@ -79,13 +167,23 @@ model Review {
   createdAt DateTime @default(now())
 }
 
+// product varient
+
+model ProductVarient {
+  id        String  @id @default(cuid())
+  color     String?
+  size      String?
+  product   Product @relation(fields: [productId], references: [id])
+  productId String
+}
+
 model Order {
   id          String      @id @default(cuid())
   userId      String
   user        User        @relation(fields: [userId], references: [id])
   totalAmount Float
   status      OrderStatus @default(PENDING)
-  OrderItem   OrderItem[]
+  orderItem   OrderItem[]
 }
 
 model OrderItem {
@@ -103,6 +201,12 @@ enum UserRole {
   CUSTOMER
 }
 
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+  DELETED
+}
+
 enum OrderStatus {
   PENDING
   PROCESSING
@@ -110,5 +214,3 @@ enum OrderStatus {
   DELIVERD
   CANCELED
 }
-
-

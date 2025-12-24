@@ -9,6 +9,6 @@ export default defineConfig({
   },
   engine: "classic",
   datasource: {
-    url: env("DATABASE_URL"), // make sure DATABASE_URL is in your .env
+    url: process.env.DATABASE_URL as string, // make sure DATABASE_URL is in your .env
   },
 });

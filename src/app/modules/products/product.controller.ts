@@ -1,6 +1,7 @@
 import { NextFunction, Request, Response } from "express";
 import { productService } from "./product.service";
 import { uploadToCloudinary } from "../../../config/uploadToCloudinary";
+import { HTTP_STATUS } from "../../status/statusCode";
 
 
 
@@ -10,8 +11,8 @@ import { uploadToCloudinary } from "../../../config/uploadToCloudinary";
 
 // Creating product category
 
-const createCategory = async (req: Request, res: Response, next: NextFunction)=>{
-    try{
+const createCategory = async (req: Request, res: Response, next: NextFunction) => {
+    try {
         const result = await productService.createCategory(req.body)
 
         res.status(201).json({
@@ -19,25 +20,75 @@ const createCategory = async (req: Request, res: Response, next: NextFunction)=>
             message: "Created Successfully",
             data: result
         })
-    }catch(err){
+    } catch (err) {
+        console.log(err)
+        next(err)
+    }
+}
+const updateCategory = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const result = await productService.updateCategory(req.params.id, req.body)
+
+        res.status(201).json({
+            success: true,
+            message: "Updated Successfully",
+            data: result
+        })
+    } catch (err) {
         console.log(err)
         next(err)
     }
 }
 
 
+const deleteCategory = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const result = await productService.deleteCategory(req.params.id)
+
+        res.status(201).json({
+            success: true,
+            message: "Deleted Successfully",
+            data: result
+        })
+    } catch (err) {
+        console.log(err)
+        next(err)
+    }
+}
+const getCategory = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const result = await productService.getCategory()
+
+        res.status(201).json({
+            success: true,
+            message: "Retrived Successfully",
+            data: result
+        })
+    } catch (err) {
+        console.log(err)
+        next(err)
+    }
+}
+
+
+
+
+
 const createProduct = async (req: Request, res: Response, next: NextFunction) => {
     try {
         let data = req.body;
-        console.log("before creating parse", data)
+        
         if (data.data && typeof data.data === 'string') {
             data = JSON.parse(data.data)
-            
         }
 
-        const { name,slug, description, price, category,categoryId, stock } = data;
+        let { name, slug, description, price, category, categoryId, stock, metaTitle, metaDescription, productId } = data;
 
+    
 
+        productId=`#${Math.floor(Math.random() * 1000*100*100)}`
+    
+        
 
         const images = []
 
@@ -52,15 +103,15 @@ const createProduct = async (req: Request, res: Response, next: NextFunction) =>
                         imageId: uploaded.public_id,
                     });
                 } catch (uploadError: any) {
-                   
+
                 }
             }
         }
 
         const result = await productService.createProduct({
-            name,slug, description, price: parseFloat(price), category,categoryId, stock: parseInt(stock), productImages: {
+            name, slug, description, price: parseFloat(price), category, categoryId,productId, metaTitle, metaDescription, stock: parseInt(stock), productImages: {
                 create: images
-            }, 
+            },
 
         })
 
@@ -71,28 +122,56 @@ const createProduct = async (req: Request, res: Response, next: NextFunction) =>
         })
     } catch (err) {
         next(err)
-        console.log("from controller.....", err)
+        
     }
 }
 
 const getProduct = async (req: Request, res: Response, next: NextFunction) => {
     try {
         const page = parseInt(req.query.page as string) || 1;
-        const limit = parseInt(req.query.limit as string) || 10
+        const limit = parseInt(req.query.limit as string) || 2
         const searchTerm = (req.query.searchTerm as string) || ""
         const category = (req.query.category as string) || ""
         const sortBy = (req.query.sortBy as string)
         const orderBy = (req.query.orderBy as string)
 
         console.log("from controller.....", orderBy, sortBy)
-    
+
         const result = await productService.getProduct({ page, limit, searchTerm, category, sortBy, orderBy })
         res.json({
             success: true,
-            data: result
+            data: result.products,
+            pagination: result.pagination
         })
     } catch (err) {
         next(err)
+    }
+}
+
+const getSingleProduct = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const result = await productService.getSingleProduct(req.params.slug)
+        console.log(result)
+        res.status(HTTP_STATUS.OK).json({
+            success: true,
+            message: "Product retrieved successfully",
+            data: result,
+        })
+    } catch (error) {
+        next(error)
+    }
+}
+const deleteProduct = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const result = await productService.deleteProduct(req.params.id)
+        console.log(result)
+        res.status(HTTP_STATUS.OK).json({
+            success: true,
+            message: "Product deleted successfully",
+            data: result,
+        })
+    } catch (error) {
+        next(error)
     }
 }
 
@@ -101,5 +180,10 @@ const getProduct = async (req: Request, res: Response, next: NextFunction) => {
 export const productController = {
     createProduct,
     getProduct,
-    createCategory
+    createCategory,
+    getSingleProduct,
+    deleteProduct,
+    getCategory,
+    deleteCategory,
+    updateCategory
 }

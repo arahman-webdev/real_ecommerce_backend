@@ -1,7 +1,7 @@
 class AppError extends Error {
     public readonly statusCode: number;
 
-    constructor(message: string, statusCode:number, statck?:string) {
+    constructor( statusCode:number,message: string, statck?:string) {
         super(message)
 
         this.statusCode = statusCode

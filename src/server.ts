@@ -86,3 +86,9 @@ startServer();
 
 
 
+/**
+ * What to do to delete relational data
+ * 1. include first relational data: true lik:include:{ productImages:true       }
+ * Then delete productId that is included in the productImg
+ * 3. And then delete product data
+ */
